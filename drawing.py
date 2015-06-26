@@ -25,7 +25,7 @@ def draw_x(context, point, pixel_radius=4, *args, **kwargs):
 def draw_parametric_fn(context, fn, steps=32, tmin=0, tmax=1, *args, **kwargs):
     with Saved(context) as c:
         # move to initial position
-        c.move_to(*fn(tmin)) # line up the head of the curve
+        c.move_to(*p2c(*fn(tmin))) # line up the head of the curve
         for t in frange(tmin, tmax, tmax/(steps)):
             c.line_to(*p2c(*fn(t))) # draw the steps
         c.line_to(*p2c(*fn(tmax))) # draw to the tail of the curve (frange doesn't include tmax in results)
