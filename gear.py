@@ -8,7 +8,7 @@ from drawing import draw_circle, draw_line, draw_x, draw_parametric_fn
 WIDTH, HEIGHT = 900, 900
 surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, WIDTH, HEIGHT)
 
-x_center, y_center, zoom_radius = 3, 0, 7
+x_center, y_center, zoom_radius = 8, 0, 2
 bounds = (x_center - zoom_radius, y_center - zoom_radius, x_center + zoom_radius, y_center + zoom_radius)
 
 c = get_graphing_context(surface, bounds)
@@ -71,10 +71,10 @@ def gear_profile(
     def fn(t):
         return involute(t, base_radius)
 
-    draw_circle(c, (0, 0), pitch_radius  , color=pitch_color  , thickness=one_pixel/4)
-    draw_circle(c, (0, 0), root_radius   , color=root_color   , thickness=one_pixel/4)
-    draw_circle(c, (0, 0), base_radius   , color=base_color   , thickness=one_pixel/4)
-    draw_circle(c, (0, 0), outside_radius, color=outside_color, thickness=one_pixel/4)
+    draw_circle(c, (0, 0), pitch_radius  , color=pitch_color  , thickness=one_pixel/6)
+    draw_circle(c, (0, 0), root_radius   , color=root_color   , thickness=one_pixel/6)
+    draw_circle(c, (0, 0), base_radius   , color=base_color   , thickness=one_pixel/6)
+    #draw_circle(c, (0, 0), outside_radius, color=outside_color, thickness=one_pixel/6)
 
     for i in range(number_of_teeth):
         with Saved(c):
@@ -87,41 +87,63 @@ def gear_profile(
 
             # xo is the intersection of the outside circle and the involute, in cartesion coordinates
             #xo = fn(to)
-            #draw_line(c, (0,0), p2c(*xo), outside_color, thickness=one_pixel/3)
+            #draw_line(c, (0,0), p2c(*xo), outside_color, thickness=one_pixel/6)
 
             # Solve for the parametric input that corresponds to the intersection of the PITCH circle and the involute
             tp = sqrt(pitch_radius**2.0 / base_radius**2.0 - 1.0)
             xp = p2c(*fn(tp))
-            draw_line(c, (0,0), xp, pitch_color, thickness=one_pixel/3)
+            draw_line(c, (0,0), xp, pitch_color, thickness=one_pixel/6)
+            draw_line(c, (0,0), xp, pitch_color, thickness=one_pixel/6)
 
             # Figure out the angle to the tooth symmetry line
             mirror_angle = fn(tp).angle + angle_per_tooth/4
-            draw_line(c, (0,0), p2c(pitch_radius, mirror_angle), (0.0, 0.8, 0.8), thickness=one_pixel/2)
+            draw_line(c, (0,0), p2c(pitch_radius, mirror_angle), (0.0, 0.8, 0.8), thickness=one_pixel/6)
+
+            draw_line(c, (0,0), p2c(fn(tp).radius, mirror_angle * 2 - fn(tp).angle), pitch_color, thickness=one_pixel/6)
 
             # Solve for the parametric input the corresponds to the beginning of the tooth profile
             if base_radius < root_radius:
                 # The root radius is larger than the base radius
-                tr = sqrt(root_radius**2 / base_radius**2 - 1) # actually plus or minus sqrt, I'm ignoring the minus?
+                tr = sqrt(root_radius**2 / base_radius**2 - 1) # actually plus or minus sqrt
+                # Don't neglect to negate tr for the other negative side of the involute!
             else: # If the base radius is larger, than we just start at 0
                 tr = 0
-            #xr = p2c(*fn(tr))
-            #draw_line(c, (0,0), xr, root_color, thickness=one_pixel/4)
+
+            # We also need to draw the sides under the involute in this case
+            draw_line(c,
+                      frum = p2c(root_radius, fn(tr).angle),
+                      to = p2c(*fn(tr)),
+                      color = root_color,
+                      thickness = one_pixel)
+            draw_line(c,
+                      frum = p2c(root_radius, mirror_angle*2 + fn(-tr).angle),
+                      to = p2c(fn(-tr).radius, mirror_angle*2 - fn(-tr).angle),
+                      color = root_color,
+                      thickness = one_pixel)
+
+            # Draw the root segment
+            draw_line(c,
+                      frum = p2c(root_radius, fn(-tr).angle + mirror_angle*2),
+                      to = p2c(root_radius, fn(tr).angle + angle_per_tooth),
+                      color = root_color,
+                      thickness = one_pixel)
+
 
             # Draw one involute curve (CCW)
             draw_parametric_fn(c, fn, tmin=tr, tmax=to, thickness=one_pixel, color=base_color)
 
             # Draw the connection at the tooth tip
-            tip_angle_distance = angle_per_tooth/2 - fn(to).angle
+            tip_angle_distance = 2*mirror_angle - fn(to).angle
             draw_parametric_fn(c,
                                lambda t: Polar(outside_radius, t),
                                tmin = fn(to).angle,
                                tmax = tip_angle_distance,
-                               thickness = one_pixel,
-                               color = base_color)
+                               thickness = one_pixel*2/3,
+                               color = (0, 0.6, 0.8))
 
             # We also need to draw the other (CW) curve
-            c.rotate(angle_per_tooth/2)
-            draw_parametric_fn(c, fn, tmin=tr, tmax=-to, thickness=one_pixel, color=base_color)
+            c.rotate(mirror_angle*2)
+            draw_parametric_fn(c, fn, tmin=-tr, tmax=-to, thickness=one_pixel, color=base_color)
 
             '''
             c.move_to(0, 0)
@@ -133,8 +155,8 @@ def gear_profile(
             '''
 
 gear_profile(
-    5,
-    7,
+    2,
+    25,
     20,
     0
 )
