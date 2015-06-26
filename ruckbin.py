@@ -3,7 +3,7 @@ from collections import namedtuple
 
 import cairo
 
-Polar = namedtuple('Polar', ('radius', 'radians'))
+Polar = namedtuple('Polar', ('radius', 'angle'))
 
 class Saved():
     def __init__(self, cr):
@@ -38,9 +38,9 @@ def frange(start, stop, step, inclusive=False):
             yield start
             start -= step
 
-def p2c(polar):
-    r, phi = polar
-    return r*cos(phi), r*sin(phi)
+def p2c(radius, angle):
+    "Take radius and angle in radians, return the corresponding point in cartesian (X/Y) space."
+    return radius * cos(angle), radius * sin(angle)
 
 def get_graphing_context(surface, bounds=(-5, -5, 5, 5)):
     c = cairo.Context(surface)
